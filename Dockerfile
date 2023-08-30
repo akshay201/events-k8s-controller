@@ -13,10 +13,12 @@ RUN go mod download
 
 # Copy the go source
 COPY cmd/main.go cmd/main.go
-#COPY api/ api/
+# COPY api/ api/
 COPY internal/controller/ internal/controller/
-#COPY utils/ utils/
+# COPY utils/ utils/
 COPY utils/ utils/
+# COPY config.env
+COPY config.env config.env
 
 
 # Build
@@ -31,6 +33,7 @@ RUN CGO_ENABLED=0 GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH} go build -a -o ma
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /workspace/manager .
+COPY --from=builder /workspace/config.env ./config.env
 USER 65532:65532
 
 ENTRYPOINT ["/manager"]
