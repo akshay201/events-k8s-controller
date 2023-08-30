@@ -17,7 +17,7 @@ limitations under the License.
 package main
 
 import (
-	"flag"
+	"encoding/json"
 	"log"
 	"os"
 
@@ -55,12 +55,18 @@ func main() {
 	if err != nil {
 		log.Fatal("cannot load config:", err)
 	}
+	logLevel := zapcore.InfoLevel
+	if LogLevel, err := zapcore.ParseLevel(config.LogLevel); err != nil {
+		log.Fatal("failed to parse log level:", err)
+	} else {
+		logLevel = LogLevel
+	}
+
 	opts := zap.Options{
 		StacktraceLevel: zapcore.DPanicLevel,
 		Development:     true,
+		Level:           logLevel,
 	}
-	opts.BindFlags(flag.CommandLine)
-	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
@@ -88,9 +94,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	labels := map[string]string{
-		"cluster_name": "minikube",
-		"job":          "eventviewer",
+	labels := map[string]string{}
+
+	if err := json.Unmarshal([]byte(config.LokiLabels), &labels); err != nil {
+		panic(err)
 	}
 
 	lokiPushGatewayUrl := config.LokiGatewayUrl
